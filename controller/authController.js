@@ -88,6 +88,7 @@ exports.login = catchAsync(async (req, res, next) => {
     user.save({validateBeforeSave:false});
     return next(new AppError("Please enter correct  password"))
   }
+  await User.findByIdAndUpdate(user.id, {userattamp: 0});
   createAndSendToken(user, 200, res)
 });
 
