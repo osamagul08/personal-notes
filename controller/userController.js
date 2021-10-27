@@ -66,3 +66,8 @@ exports.getUserById = catchAsync(async (req, res, next) => {
     }
     responseHelper(res, 'successful', 200, '', user);
 })
+
+exports.blockUser = catchAsync(async (req, res, next) => {
+    await User.findByIdAndUpdate('6178ed39714c68d731739553', {active: false});
+    responseHelper(res, 'successful', 200, 'user id:'+req.params.id+' have been block');
+})

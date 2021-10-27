@@ -19,5 +19,6 @@ route.route('/').get(userController.getAllUser);
 route.route('/:id').get(userController.getUserById)
 .patch(userController.updateUser)
 .delete(userController.deleteUser)
+route.route('/blockuser/:id').get(userController.blockUser);
 
 module.exports = route;
