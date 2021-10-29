@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const generate = require('generate-password')
 const jwt = require('jsonwebtoken');
 const {promisify} = require('util');
 const AppError = require('../utils/appError');
@@ -102,6 +103,7 @@ exports.protected = catchAsync(async (req, res, next) => {
   if (!token) {
     return next(new AppError('please first login'))
   }
+  console.log(req.headers)
   const decode = await promisify(jwt.verify)(token, process.env.JWT_SECRET)
   const currentUser = await User.findById(decode.id);
   //check user are exist or not
@@ -110,6 +112,34 @@ exports.protected = catchAsync(async (req, res, next) => {
   }
   req.user = currentUser;
   next();
+});
+
+exports.generatePassword = catchAsync(async (req, res, next) => {
+  var password = generate.generate({length: 8, numbers: true, symbols: false, lowercase: true, uppercase: true});
+  console.log(password);
+  const hashToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  const currentUser = await User.findOne({ passwordSignupToken: hashToken, passwordResetExpire:{ $gt: Date.now()}})
+  const message = `you password is ${password}`;
+  if (!currentUser) {
+    return responseHelper(res, 'fial', 404, 'token expire or invalide token');
+  }
+  try {
+      await sendEmail({
+        email: currentUser.email,
+        subject: 'Password',
+        message
+      })
+      responseHelper(res, 'success', 200, `you password is ${password} also send to mail `)
+  } catch (error) {
+      console.log(error)
+      next(new AppError('email not send pleas try agaian later'))
+  }
+  currentUser.passwordSignupToken = undefined;
+  currentUser.passwordResetExpire = undefined;
+  currentUser.password = password;
+  currentUser.active = true;
+  await currentUser.save({validateBeforeSave:false})
+  createAndSendToken(currentUser, 200, res)
 });
 
 exports.checkPermission = (...role) => {
